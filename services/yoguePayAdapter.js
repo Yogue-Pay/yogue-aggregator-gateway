@@ -42,4 +42,30 @@ const listTransactions = async (authorizationHeader, query) => {
   return res.data
 }
 
-module.exports = { getWallet, createDeposit, createWithdrawal, listTransactions }
+const getDepositStatus = async (authorizationHeader, depositId) => {
+  const res = await client.get(`/deposits/${depositId}`, { headers: forwardHeaders(authorizationHeader) })
+  return res.data
+}
+
+const getWithdrawalStatus = async (authorizationHeader, payoutId) => {
+  const res = await client.get(`/withdrawals/${payoutId}`, { headers: forwardHeaders(authorizationHeader) })
+  return res.data
+}
+
+const lookupMsisdn = async (authorizationHeader, msisdn) => {
+  const res = await client.get("/msisdn/lookup", {
+    headers: forwardHeaders(authorizationHeader),
+    params: { msisdn },
+  })
+  return res.data
+}
+
+module.exports = {
+  getWallet,
+  createDeposit,
+  createWithdrawal,
+  listTransactions,
+  getDepositStatus,
+  getWithdrawalStatus,
+  lookupMsisdn,
+}

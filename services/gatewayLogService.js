@@ -19,7 +19,7 @@ const extractClientId = (authorizationHeader) => {
 // fails the actual response to the partner.
 const logGatewayRequest = async ({
   authorizationHeader, provider, action, requestBody, requestQuery,
-  status, httpStatus, responseBody, errorMessage, durationMs,
+  status, httpStatus, responseBody, errorMessage, durationMs, idempotencyKey,
 }) => {
   try {
     await GatewayTransaction.create({
@@ -28,6 +28,7 @@ const logGatewayRequest = async ({
       action,
       requestBody: requestBody || null,
       requestQuery: requestQuery || null,
+      idempotencyKey: idempotencyKey || null,
       status,
       httpStatus,
       responseBody: responseBody || null,

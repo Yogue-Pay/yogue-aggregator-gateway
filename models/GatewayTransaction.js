@@ -12,19 +12,35 @@ const mongoose = require("mongoose")
  * clientId here is the aggregator clientId string (e.g. "yp_live_..."),
  * not a Mongo ref — the gateway doesn't own the AggregatorClient
  * record, Yogue Pay does. We just log which client string was used.
+ *
+ * idempotencyKey — when a partner supplies one on a POST /deposits or
+ * /withdrawals call, it's stored here so the gateway itself can short-
+ * circuit a retried request (same clientId + action + key) by replaying
+ * the cached responseBody instead of forwarding to Yogue Pay a second
+ * time. null for every other action, and for calls that didn't include
+ * a key.
  */
 const gatewayTransactionSchema = new mongoose.Schema({
   clientId: { type: String, required: true, index: true },
   provider: { type: String, required: true, index: true }, // "yoguepay", later "stripe" etc.
   action: {
     type: String,
-    enum: ["wallet_read", "deposit", "withdrawal", "transactions_list"],
+    enum: [
+      "wallet_read",
+      "deposit",
+      "withdrawal",
+      "transactions_list",
+      "deposit_status",
+      "withdrawal_status",
+      "msisdn_lookup",
+    ],
     required: true,
     index: true,
   },
 
   requestBody: { type: mongoose.Schema.Types.Mixed, default: null },
   requestQuery: { type: mongoose.Schema.Types.Mixed, default: null },
+  idempotencyKey: { type: String, default: null },
 
   status: {
     type: String,
@@ -41,6 +57,12 @@ const gatewayTransactionSchema = new mongoose.Schema({
 
 gatewayTransactionSchema.index({ createdAt: -1 })
 gatewayTransactionSchema.index({ clientId: 1, createdAt: -1 })
+// Idempotency replay lookup — sparse so the many rows without a key
+// never bloat this index.
+gatewayTransactionSchema.index(
+  { clientId: 1, action: 1, idempotencyKey: 1 },
+  { sparse: true }
+)
 
 const GatewayTransaction = mongoose.model("GatewayTransaction", gatewayTransactionSchema)
 module.exports = GatewayTransaction
