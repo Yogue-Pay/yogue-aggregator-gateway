@@ -4,10 +4,12 @@ const helmet = require("helmet")
 const cors = require("cors")
 const compression = require("compression")
 const rateLimit = require("express-rate-limit")
+const { ipKeyGenerator } = require("express-rate-limit")
 const winston = require("winston")
 const { connectDb } = require("./config/db")
 const aggregatorGatewayRoutes = require("./routes/aggregatorGatewayRoutes")
 const gatewayAdminRoutes = require("./routes/gatewayAdminRoutes")
+const { extractClientId } = require("./services/gatewayLogService")
 
 const logger = winston.createLogger({
   level: "info",
@@ -36,16 +38,31 @@ app.use((req, res, next) => {
   next()
 })
 
-// Keyed by client's own IP for now — no client identity exists at the
-// gateway layer itself (that lives in the Bearer token, which the
-// gateway doesn't decode, only forwards). Once GatewayTransaction data
-// gives enough signal, this could be tightened to key by the clientId
-// segment extracted in gatewayLogService.js instead.
+// UPDATED — was keyed purely by IP, with a comment noting it "could be
+// tightened to key by the clientId segment extracted in
+// gatewayLogService.js instead" once that extraction existed. It exists
+// now (extractClientId, added for GatewayTransaction logging) — this
+// closes that gap: a request with a well-formed Bearer token is keyed
+// by its clientId (so one partner's traffic can't crowd out another's
+// even if both sit behind the same NAT/shared infra, and a single
+// partner spread across multiple servers still shares one fair bucket).
+// Falls back to IP only for missing/malformed auth headers — those get
+// rejected downstream by requireBearerToken anyway, but still need a
+// valid rate-limit key to prevent limiter bypass by simply omitting
+// the header.
 const gatewayLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 200,
   standardHeaders: true,
   legacyHeaders: false,
+  keyGenerator: (req) => {
+    const authHeader = req.headers.authorization || ""
+    if (authHeader.startsWith("Bearer ")) {
+      const clientId = extractClientId(authHeader)
+      if (clientId && clientId !== "unknown") return clientId
+    }
+    return ipKeyGenerator(req)
+  },
   message: { error: "Too many requests." },
 })
 
@@ -78,3 +95,4 @@ connectDb(logger)
     logger.error(`MongoDB connection error: ${err.message}`)
     process.exit(1)
   })
+  

@@ -60,6 +60,46 @@ const lookupMsisdn = async (authorizationHeader, msisdn) => {
   return res.data
 }
 
+const createInvoice = async (authorizationHeader, body) => {
+  const res = await client.post("/invoices", body, { headers: forwardHeaders(authorizationHeader) })
+  return res.data
+}
+
+const listInvoices = async (authorizationHeader) => {
+  const res = await client.get("/invoices", { headers: forwardHeaders(authorizationHeader) })
+  return res.data
+}
+
+const getInvoice = async (authorizationHeader, invoiceId) => {
+  const res = await client.get(`/invoices/${invoiceId}`, { headers: forwardHeaders(authorizationHeader) })
+  return res.data
+}
+
+const cancelInvoice = async (authorizationHeader, invoiceId) => {
+  const res = await client.post(`/invoices/${invoiceId}/cancel`, {}, { headers: forwardHeaders(authorizationHeader) })
+  return res.data
+}
+
+const markInvoicePaidCash = async (authorizationHeader, invoiceId) => {
+  const res = await client.post(`/invoices/${invoiceId}/mark-paid-cash`, {}, { headers: forwardHeaders(authorizationHeader) })
+  return res.data
+}
+
+const getInvoiceSummary = async (authorizationHeader) => {
+  const res = await client.get("/invoices/summary", { headers: forwardHeaders(authorizationHeader) })
+  return res.data
+}
+
+const getFeesPreview = async (authorizationHeader, query) => {
+  const res = await client.get("/fees/preview", { headers: forwardHeaders(authorizationHeader), params: query })
+  return res.data
+}
+
+const getClientStatus = async (authorizationHeader) => {
+  const res = await client.get("/status", { headers: forwardHeaders(authorizationHeader) })
+  return res.data
+}
+
 module.exports = {
   getWallet,
   createDeposit,
@@ -68,4 +108,12 @@ module.exports = {
   getDepositStatus,
   getWithdrawalStatus,
   lookupMsisdn,
+  createInvoice,
+  listInvoices,
+  getInvoice,
+  cancelInvoice,
+  markInvoicePaidCash,
+  getInvoiceSummary,
+  getFeesPreview,
+  getClientStatus,
 }
