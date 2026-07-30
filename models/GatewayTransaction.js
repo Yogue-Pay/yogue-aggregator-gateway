@@ -42,6 +42,7 @@ const gatewayTransactionSchema = new mongoose.Schema({
       "fees_preview",
       "client_status",
       "fx_rates",
+      "fx_convert",
     ],
     required: true,
     index: true,

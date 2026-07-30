@@ -22,7 +22,7 @@ docker push ${ECR_URL}:latest
 echo "🚀 Triggering ECS deployment..."
 aws ecs update-service \
   --cluster default \
-  --service yogue-aggregator-gateway-service-p5k9qaak \
+  --service yogue-aggregator-gateway-1245 \
   --force-new-deployment \
   --region ${AWS_REGION} \
   --no-cli-pager > /dev/null

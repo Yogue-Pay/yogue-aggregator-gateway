@@ -345,6 +345,24 @@ router.get("/fx/rates", requireBearerToken, async (req, res) => {
   }
 })
 
+// GET /fx/convert?amount=&from=&to= — the actual fee-conversion step.
+router.get("/fx/convert", requireBearerToken, async (req, res) => {
+  const startedAt = Date.now()
+  const provider = req.query.provider || getDefaultProvider()
+  try {
+    const adapter = resolveAdapter(req.query.provider)
+    const data = await adapter.getFxConvert(req.authorizationHeader, req.query)
+    logGatewayRequest({
+      authorizationHeader: req.authorizationHeader, provider, action: "fx_convert",
+      requestQuery: req.query, status: "success", httpStatus: 200, responseBody: data,
+      durationMs: Date.now() - startedAt,
+    })
+    return res.status(200).json(data)
+  } catch (err) {
+    return forwardError(err, res, { req, provider, action: "fx_convert", startedAt })
+  }
+})
+
 const forwardError = (err, res, { req, provider, action, startedAt, idempotencyKey }) => {
   const httpStatus = err.response?.status || err.status || 502
   const responseBody = err.response?.data || { success: false, message: err.message || "Upstream provider unavailable" }
