@@ -100,6 +100,11 @@ const getClientStatus = async (authorizationHeader) => {
   return res.data
 }
 
+const getFxRates = async (authorizationHeader) => {
+  const res = await client.get("/fx/rates", { headers: forwardHeaders(authorizationHeader) })
+  return res.data
+}
+
 module.exports = {
   getWallet,
   createDeposit,
@@ -116,4 +121,5 @@ module.exports = {
   getInvoiceSummary,
   getFeesPreview,
   getClientStatus,
+  getFxRates,
 }

@@ -41,6 +41,7 @@ const gatewayTransactionSchema = new mongoose.Schema({
       "invoice_summary",
       "fees_preview",
       "client_status",
+      "fx_rates",
     ],
     required: true,
     index: true,

@@ -326,6 +326,25 @@ router.get("/status", requireBearerToken, async (req, res) => {
   }
 })
 
+// GET /fx/rates — same plain-read shape as /status, no idempotency
+// needed.
+router.get("/fx/rates", requireBearerToken, async (req, res) => {
+  const startedAt = Date.now()
+  const provider = req.query.provider || getDefaultProvider()
+  try {
+    const adapter = resolveAdapter(req.query.provider)
+    const data = await adapter.getFxRates(req.authorizationHeader)
+    logGatewayRequest({
+      authorizationHeader: req.authorizationHeader, provider, action: "fx_rates",
+      status: "success", httpStatus: 200, responseBody: data,
+      durationMs: Date.now() - startedAt,
+    })
+    return res.status(200).json(data)
+  } catch (err) {
+    return forwardError(err, res, { req, provider, action: "fx_rates", startedAt })
+  }
+})
+
 const forwardError = (err, res, { req, provider, action, startedAt, idempotencyKey }) => {
   const httpStatus = err.response?.status || err.status || 502
   const responseBody = err.response?.data || { success: false, message: err.message || "Upstream provider unavailable" }
