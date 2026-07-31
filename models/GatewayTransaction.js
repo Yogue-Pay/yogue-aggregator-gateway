@@ -43,6 +43,7 @@ const gatewayTransactionSchema = new mongoose.Schema({
       "client_status",
       "fx_rates",
       "fx_convert",
+      "providers_list",
     ],
     required: true,
     index: true,

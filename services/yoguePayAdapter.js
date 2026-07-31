@@ -110,6 +110,11 @@ const getFxConvert = async (authorizationHeader, query) => {
   return res.data
 }
 
+const getProviders = async (authorizationHeader, query) => {
+  const res = await client.get("/providers", { headers: forwardHeaders(authorizationHeader), params: query })
+  return res.data
+}
+
 module.exports = {
   getWallet,
   createDeposit,
@@ -128,4 +133,5 @@ module.exports = {
   getClientStatus,
   getFxRates,
   getFxConvert,
+  getProviders,
 }
