@@ -44,6 +44,16 @@ const gatewayTransactionSchema = new mongoose.Schema({
       "fx_rates",
       "fx_convert",
       "providers_list",
+      // NEW (2026-09-06) — promo code endpoints added to
+      // yoguePayAdapter.js / aggregatorGatewayRoutes.js. Same fix
+      // shape as every other enum gap found today (ActivityLog,
+      // Transaction, SystemAccount) — adding here BEFORE deploying the
+      // routes that log these actions, not after discovering a
+      // ValidationError in production.
+      "promo_create",
+      "promo_list",
+      "promo_deactivate",
+      "promo_validate",
     ],
     required: true,
     index: true,
@@ -68,8 +78,6 @@ const gatewayTransactionSchema = new mongoose.Schema({
 
 gatewayTransactionSchema.index({ createdAt: -1 })
 gatewayTransactionSchema.index({ clientId: 1, createdAt: -1 })
-// Idempotency replay lookup — sparse so the many rows without a key
-// never bloat this index.
 gatewayTransactionSchema.index(
   { clientId: 1, action: 1, idempotencyKey: 1 },
   { sparse: true }

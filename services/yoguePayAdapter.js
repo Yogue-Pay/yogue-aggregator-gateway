@@ -115,6 +115,26 @@ const getProviders = async (authorizationHeader, query) => {
   return res.data
 }
 
+const createPromoCode = async (authorizationHeader, body) => {
+  const res = await client.post("/promo-codes", body, { headers: forwardHeaders(authorizationHeader) })
+  return res.data
+}
+
+const listPromoCodes = async (authorizationHeader) => {
+  const res = await client.get("/promo-codes", { headers: forwardHeaders(authorizationHeader) })
+  return res.data
+}
+
+const deactivatePromoCode = async (authorizationHeader, promoCodeId) => {
+  const res = await client.post(`/promo-codes/${promoCodeId}/deactivate`, {}, { headers: forwardHeaders(authorizationHeader) })
+  return res.data
+}
+
+const validatePromoCode = async (authorizationHeader, body) => {
+  const res = await client.post("/promo-codes/validate", body, { headers: forwardHeaders(authorizationHeader) })
+  return res.data
+}
+
 module.exports = {
   getWallet,
   createDeposit,
@@ -134,4 +154,8 @@ module.exports = {
   getFxRates,
   getFxConvert,
   getProviders,
+  createPromoCode,
+  listPromoCodes,
+  deactivatePromoCode,
+  validatePromoCode
 }

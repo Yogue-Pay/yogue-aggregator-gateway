@@ -381,6 +381,85 @@ router.get("/providers", requireBearerToken, async (req, res) => {
   }
 })
 
+// Promo codes — same body-forwarding / logging pattern as every route
+// above. POST /promo-codes gets the same idempotency-replay protection
+// as deposits/withdrawals/invoice creation, since it's also a
+// state-mutating action a partner might retry after a timeout.
+router.post("/promo-codes", requireBearerToken, async (req, res) => {
+  const startedAt = Date.now()
+  const provider = req.query.provider || getDefaultProvider()
+  const idempotencyKey = req.body?.idempotencyKey || null
+
+  const replay = await findIdempotentReplay(req.authorizationHeader, "promo_create", idempotencyKey)
+  if (replay) {
+    return res.status(replay.httpStatus).json({ ...replay.responseBody, idempotentReplay: true })
+  }
+
+  try {
+    const adapter = resolveAdapter(req.query.provider)
+    const data = await adapter.createPromoCode(req.authorizationHeader, req.body)
+    logGatewayRequest({
+      authorizationHeader: req.authorizationHeader, provider, action: "promo_create",
+      requestBody: req.body, status: "success", httpStatus: 201, responseBody: data,
+      durationMs: Date.now() - startedAt, idempotencyKey,
+    })
+    return res.status(201).json(data)
+  } catch (err) {
+    return forwardError(err, res, { req, provider, action: "promo_create", startedAt, idempotencyKey })
+  }
+})
+
+router.get("/promo-codes", requireBearerToken, async (req, res) => {
+  const startedAt = Date.now()
+  const provider = req.query.provider || getDefaultProvider()
+  try {
+    const adapter = resolveAdapter(req.query.provider)
+    const data = await adapter.listPromoCodes(req.authorizationHeader)
+    logGatewayRequest({
+      authorizationHeader: req.authorizationHeader, provider, action: "promo_list",
+      status: "success", httpStatus: 200, responseBody: data,
+      durationMs: Date.now() - startedAt,
+    })
+    return res.status(200).json(data)
+  } catch (err) {
+    return forwardError(err, res, { req, provider, action: "promo_list", startedAt })
+  }
+})
+
+router.post("/promo-codes/:id/deactivate", requireBearerToken, async (req, res) => {
+  const startedAt = Date.now()
+  const provider = req.query.provider || getDefaultProvider()
+  try {
+    const adapter = resolveAdapter(req.query.provider)
+    const data = await adapter.deactivatePromoCode(req.authorizationHeader, req.params.id)
+    logGatewayRequest({
+      authorizationHeader: req.authorizationHeader, provider, action: "promo_deactivate",
+      status: "success", httpStatus: 200, responseBody: data,
+      durationMs: Date.now() - startedAt,
+    })
+    return res.status(200).json(data)
+  } catch (err) {
+    return forwardError(err, res, { req, provider, action: "promo_deactivate", startedAt })
+  }
+})
+
+router.post("/promo-codes/validate", requireBearerToken, async (req, res) => {
+  const startedAt = Date.now()
+  const provider = req.query.provider || getDefaultProvider()
+  try {
+    const adapter = resolveAdapter(req.query.provider)
+    const data = await adapter.validatePromoCode(req.authorizationHeader, req.body)
+    logGatewayRequest({
+      authorizationHeader: req.authorizationHeader, provider, action: "promo_validate",
+      requestBody: req.body, status: "success", httpStatus: 200, responseBody: data,
+      durationMs: Date.now() - startedAt,
+    })
+    return res.status(200).json(data)
+  } catch (err) {
+    return forwardError(err, res, { req, provider, action: "promo_validate", startedAt })
+  }
+})
+
 const forwardError = (err, res, { req, provider, action, startedAt, idempotencyKey }) => {
   const httpStatus = err.response?.status || err.status || 502
   const responseBody = err.response?.data || { success: false, message: err.message || "Upstream provider unavailable" }
