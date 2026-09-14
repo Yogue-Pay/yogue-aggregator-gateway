@@ -7,25 +7,6 @@ const GatewayTransaction = require("../models/GatewayTransaction")
 
 const router = express.Router()
 
-// Every route here is the STABLE, client-facing API. Partners integrate
-// against these paths and never need to know or care which provider
-// (Yogue Pay today, possibly others later) actually handles the request
-// underneath — resolveAdapter() decides that.
-//
-// req.query.provider lets a caller opt into a specific provider
-// explicitly later (e.g. ?provider=stripe); omitted = default provider.
-//
-// Every call is logged to the gateway's own MongoDB via
-// logGatewayRequest — success or failure — regardless of what Yogue Pay
-// (or any future provider) recorded on its own side.
-
-// Idempotency replay check for POST /deposits and POST /withdrawals. If
-// this exact clientId + action + idempotencyKey already succeeded, hand
-// back the cached response instead of forwarding to Yogue Pay a second
-// time — protects a partner's timeout-triggered retry from becoming a
-// second real deposit/withdrawal. Only checks previously SUCCESSFUL
-// calls; a prior failure is not replayed, since the partner presumably
-// wants a genuine retry after a failure.
 const findIdempotentReplay = async (authorizationHeader, action, idempotencyKey) => {
   if (!idempotencyKey) return null
   const clientId = extractClientId(authorizationHeader)
